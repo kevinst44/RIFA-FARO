@@ -29,13 +29,10 @@ export class RaffleFormComponent implements OnInit {
   constructor(private fb: FormBuilder, private apiService: ApiService) {}
 
   ngOnInit(): void {
-    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-
     this.form = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
       cedula: ['', [Validators.required, Validators.pattern(/^\d{6,12}$/)]],
-      celular: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
-      email: ['', [Validators.required, Validators.pattern(emailPattern)]]
+      celular: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]]
     });
 
     this.apiService.getPaymentInfo().subscribe({
@@ -118,7 +115,6 @@ export class RaffleFormComponent implements OnInit {
     formData.append('nombre', this.form.value.nombre.trim());
     formData.append('cedula', this.form.value.cedula.trim());
     formData.append('celular', this.form.value.celular.trim());
-    formData.append('email', this.form.value.email.trim().toLowerCase());
     formData.append('payment_image', this.selectedFile);
 
     this.apiService.submitParticipant(formData).subscribe({
@@ -159,5 +155,4 @@ export class RaffleFormComponent implements OnInit {
   get nombreCtrl() { return this.form.get('nombre'); }
   get cedulaCtrl() { return this.form.get('cedula'); }
   get celularCtrl() { return this.form.get('celular'); }
-  get emailCtrl() { return this.form.get('email'); }
 }

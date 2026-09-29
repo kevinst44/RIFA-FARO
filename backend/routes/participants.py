@@ -95,7 +95,6 @@ async def create_participant(
     nombre: str = Form(...),
     cedula: str = Form(...),
     celular: str = Form(...),
-    email: str = Form(...),
     payment_image: UploadFile = File(...)
 ):
     if payment_image.content_type not in ALLOWED_TYPES:
@@ -132,7 +131,6 @@ async def create_participant(
         "nombre": nombre.strip(),
         "cedula": cedula.strip(),
         "celular": celular.strip(),
-        "email": email.strip().lower(),
         "payment_image_url": f"/uploads/{filename}",
         "status": "pending",
         "ticket_number": ticket_number,

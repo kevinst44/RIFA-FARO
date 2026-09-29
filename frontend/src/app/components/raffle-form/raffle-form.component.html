@@ -117,26 +117,6 @@
               }
             </div>
 
-            <!-- Correo electrónico -->
-            <div class="field-group">
-              <label class="field-label">
-                <i class="bi bi-envelope-fill me-2"></i>Correo Electrónico
-                <span class="required">*</span>
-              </label>
-              <input type="email" class="form-control"
-                [class.is-invalid]="emailCtrl?.invalid && emailCtrl?.touched"
-                formControlName="email"
-                placeholder="Ej: juan&#64;correo.com"
-                autocomplete="email" inputmode="email">
-              <div class="field-hint">Aquí recibirás el número de tu boleta</div>
-              @if (emailCtrl?.invalid && emailCtrl?.touched) {
-                <div class="field-error">
-                  @if (emailCtrl?.errors?.['required']) { El correo es requerido }
-                  @if (emailCtrl?.errors?.['pattern']) { Ingresa un correo válido (Ej: nombre&#64;gmail.com) }
-                </div>
-              }
-            </div>
-
             <!-- Pregunta de pago -->
             <div class="field-group">
               <label class="field-label">
@@ -248,8 +228,7 @@
 
             <div class="info-contact">
               <i class="bi bi-info-circle-fill me-2"></i>
-              En caso de no recibir tu boleta al correo electrónico, escríbenos al
-              <strong>3234240621</strong>
+              ¿Tienes dudas? Escríbenos al <strong>3234240621</strong>
             </div>
 
           </form>
