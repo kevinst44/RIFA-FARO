@@ -15,6 +15,9 @@ __pycache__/
 # Imágenes subidas por usuarios
 uploads/
 
+# Frontend compilado — se incluye en el repo para Railway
+# static/
+
 # Logs
 *.log
 
