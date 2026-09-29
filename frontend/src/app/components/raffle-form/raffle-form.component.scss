@@ -3,6 +3,52 @@
   padding-top: 80px;
 }
 
+// Ticket display on success
+.ticket-display {
+  background: linear-gradient(135deg, #1a3a2a, #2d6a4f);
+  border-radius: 14px;
+  padding: 24px;
+  margin: 16px 0 8px;
+
+  .ticket-display-label {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0 0 8px;
+  }
+
+  .ticket-display-number {
+    color: #f7c948;
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    line-height: 1;
+  }
+
+  .ticket-display-hint {
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    margin: 10px 0 0;
+  }
+}
+
+.btn-download {
+  background: #2d6a4f;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 28px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+
+  &:hover { background: #1a3a2a; transform: translateY(-1px); color: white; }
+}
+
 // Success card
 .success-card {
   background: white;

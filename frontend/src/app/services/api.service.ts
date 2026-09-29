@@ -48,6 +48,8 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
+  getBaseUrl(): string { return this.apiUrl; }
+
   getPaymentInfo(): Observable<PaymentInfo> {
     return this.http.get<PaymentInfo>(`${this.apiUrl}/api/participants/payment-info`);
   }

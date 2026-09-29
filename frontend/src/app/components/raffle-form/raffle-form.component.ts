@@ -23,6 +23,8 @@ export class RaffleFormComponent implements OnInit {
   isSubmitting = false;
   submitSuccess = false;
   submitError = '';
+  ticketNumber: number | null = null;
+  participantId: string | null = null;
 
   constructor(private fb: FormBuilder, private apiService: ApiService) {}
 
@@ -120,15 +122,27 @@ export class RaffleFormComponent implements OnInit {
     formData.append('payment_image', this.selectedFile);
 
     this.apiService.submitParticipant(formData).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.submitSuccess = true;
         this.isSubmitting = false;
+        this.ticketNumber = res.ticket_number ?? null;
+        this.participantId = res.id ?? null;
       },
       error: (err) => {
         this.submitError = err.error?.detail || 'Error al enviar el formulario. Intenta de nuevo.';
         this.isSubmitting = false;
       }
     });
+  }
+
+  downloadTicket(): void {
+    if (!this.participantId) return;
+    const url = `${this.apiService.getBaseUrl()}/api/participants/${this.participantId}/ticket`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `boleta-${String(this.ticketNumber).padStart(3,'0')}.html`;
+    a.target = '_blank';
+    a.click();
   }
 
   resetForm(): void {
@@ -138,6 +152,8 @@ export class RaffleFormComponent implements OnInit {
     this.knowsWhereToPay = null;
     this.submitSuccess = false;
     this.submitError = '';
+    this.ticketNumber = null;
+    this.participantId = null;
   }
 
   get nombreCtrl() { return this.form.get('nombre'); }

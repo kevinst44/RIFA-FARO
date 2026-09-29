@@ -8,16 +8,22 @@
         <div class="success-card fade-in text-center">
           <div class="success-animation">🎉</div>
           <h2>¡Registro Exitoso!</h2>
-          <p class="success-text">
-            Recibimos tu participación. Nuestro equipo verificará tu pago y recibirás el
-            número de tu boleta por correo electrónico y SMS.
-          </p>
-          <div class="success-icon-row">
-            <span>📧</span>
-            <span>→</span>
-            <span>🎟️</span>
+
+          @if (ticketNumber) {
+          <div class="ticket-display">
+            <p class="ticket-display-label">Tu número de boleta es</p>
+            <div class="ticket-display-number">#{{ ticketNumber.toString().padStart(3, '0') }}</div>
+            <p class="ticket-display-hint">¡Guarda este número, es único e irrepetible!</p>
           </div>
-          <button class="btn btn-rifa mt-4" (click)="resetForm()">
+          <button class="btn btn-download mt-3" (click)="downloadTicket()">
+            <i class="bi bi-download me-2"></i>Descargar mi boleta
+          </button>
+          }
+
+          <p class="success-text mt-3">
+            Nuestro equipo verificará tu pago. Guarda o imprime tu boleta descargada.
+          </p>
+          <button class="btn btn-rifa mt-3" (click)="resetForm()">
             Registrar otra participación
           </button>
         </div>
