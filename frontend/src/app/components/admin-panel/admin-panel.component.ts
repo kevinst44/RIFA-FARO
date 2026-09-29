@@ -67,14 +67,14 @@ export class AdminPanelComponent implements OnInit {
   }
 
   private updateStats(data: Participant[]): void {
-    const accepted = data.filter(p => p.status === 'accepted').length;
+    const total = data.length;
     this.stats = {
-      total: data.length,
+      total,
       pending: data.filter(p => p.status === 'pending').length,
-      accepted,
+      accepted: data.filter(p => p.status === 'accepted').length,
       rejected: data.filter(p => p.status === 'rejected').length,
       max_tickets: 300,
-      remaining_tickets: Math.max(0, 300 - accepted),
+      remaining_tickets: Math.max(0, 300 - total),
     };
   }
 
@@ -107,12 +107,10 @@ export class AdminPanelComponent implements OnInit {
     this.apiService.acceptParticipant(participant.id).subscribe({
       next: (res) => {
         this.processingId = null;
-        const smsStatus = res.sms_sent ? '📱 SMS ✅' : '';
-        const emailStatus = res.email_sent ? '📧 Email ✅' : '📧 Email pendiente config';
-        const notifs = [smsStatus, emailStatus].filter(Boolean).join(' · ');
-        this.actionSuccess = `¡${participant.nombre} aceptado! Boleta #${String(res.ticket_number).padStart(3, '0')} — ${notifs}`;
+        const boleta = res.ticket_number ? ` — Boleta #${String(res.ticket_number).padStart(3, '0')}` : '';
+        this.actionSuccess = `✅ ${participant.nombre} marcado como asistió${boleta}`;
         this.loadData();
-        setTimeout(() => (this.actionSuccess = ''), 6000);
+        setTimeout(() => (this.actionSuccess = ''), 5000);
       },
       error: (err) => {
         this.processingId = null;
@@ -123,14 +121,16 @@ export class AdminPanelComponent implements OnInit {
   }
 
   rejectParticipant(participant: Participant): void {
-    if (!confirm(`¿Rechazar a ${participant.nombre}?`)) return;
+    if (!confirm(`¿Marcar a ${participant.nombre} como NO asistió al evento?`)) return;
     if (this.processingId) return;
     this.processingId = participant.id;
 
     this.apiService.rejectParticipant(participant.id).subscribe({
       next: () => {
         this.processingId = null;
+        this.actionSuccess = `❌ ${participant.nombre} marcado como no asistió`;
         this.loadData();
+        setTimeout(() => (this.actionSuccess = ''), 5000);
       },
       error: (err) => {
         this.processingId = null;

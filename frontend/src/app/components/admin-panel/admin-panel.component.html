@@ -8,7 +8,7 @@
       </div>
       <div>
         <h1>Panel de Administración</h1>
-        <p>Gestiona las participaciones de la rifa</p>
+        <p>Control de asistencia al evento</p>
       </div>
     </div>
     <div class="header-search">
@@ -52,21 +52,21 @@
         <div class="stat-icon">⏳</div>
         <div class="stat-info">
           <span class="stat-num">{{ stats.pending }}</span>
-          <span class="stat-label">Pendientes</span>
+          <span class="stat-label">Sin confirmar</span>
         </div>
       </div>
       <div class="stat-card accepted">
         <div class="stat-icon">✅</div>
         <div class="stat-info">
           <span class="stat-num">{{ stats.accepted }}</span>
-          <span class="stat-label">Aceptados</span>
+          <span class="stat-label">Asistieron</span>
         </div>
       </div>
       <div class="stat-card rejected">
         <div class="stat-icon">❌</div>
         <div class="stat-info">
           <span class="stat-num">{{ stats.rejected }}</span>
-          <span class="stat-label">Rechazados</span>
+          <span class="stat-label">No asistieron</span>
         </div>
       </div>
     </div>
@@ -75,14 +75,14 @@
     @if (stats.max_tickets) {
       <div class="tickets-progress-bar">
         <div class="bar-header">
-          <span>🎟️ Boletas asignadas: <strong>{{ stats.accepted }}</strong> / {{ stats.max_tickets }}</span>
+          <span>🎟️ Boletas registradas: <strong>{{ stats.total }}</strong> / {{ stats.max_tickets }}</span>
           <span [class.text-warning]="stats.remaining_tickets <= 20" [class.text-danger]="stats.remaining_tickets === 0">
             @if (stats.remaining_tickets === 0) { 🚫 Agotadas }
             @else { {{ stats.remaining_tickets }} disponibles }
           </span>
         </div>
         <div class="bar-track">
-          <div class="bar-fill" [style.width.%]="(stats.accepted / stats.max_tickets) * 100"></div>
+          <div class="bar-fill" [style.width.%]="(stats.total / stats.max_tickets) * 100"></div>
         </div>
       </div>
     }
@@ -107,13 +107,13 @@
         Todos ({{ stats.total }})
       </button>
       <button class="tab-btn" [class.active]="filter === 'pending'" (click)="filter = 'pending'">
-        Pendientes ({{ stats.pending }})
+        Sin confirmar ({{ stats.pending }})
       </button>
       <button class="tab-btn" [class.active]="filter === 'accepted'" (click)="filter = 'accepted'">
-        Aceptados ({{ stats.accepted }})
+        Asistieron ({{ stats.accepted }})
       </button>
       <button class="tab-btn" [class.active]="filter === 'rejected'" (click)="filter = 'rejected'">
-        Rechazados ({{ stats.rejected }})
+        No asistieron ({{ stats.rejected }})
       </button>
     </div>
 
@@ -142,9 +142,9 @@
 
             <!-- Status badge -->
             <div class="status-badge" [class]="'badge-' + participant.status">
-              @if (participant.status === 'pending') { ⏳ Pendiente }
-              @if (participant.status === 'accepted') { ✅ Aceptado }
-              @if (participant.status === 'rejected') { ❌ Rechazado }
+              @if (participant.status === 'pending') { ⏳ Sin confirmar }
+              @if (participant.status === 'accepted') { ✅ Asistió }
+              @if (participant.status === 'rejected') { ❌ No asistió }
             </div>
 
             <!-- Payment image preview -->
@@ -208,7 +208,7 @@
                     }
                   </button>
                 }
-                @if (participant.status === 'pending') {
+                @if (participant.status !== 'accepted') {
                   <button
                     class="btn btn-aceptar"
                     (click)="acceptParticipant(participant)"
@@ -219,14 +219,16 @@
                     } @else {
                       <i class="bi bi-check-lg me-1"></i>
                     }
-                    Aceptar
+                    Asistió
                   </button>
+                }
+                @if (participant.status !== 'rejected') {
                   <button
                     class="btn btn-rechazar"
                     (click)="rejectParticipant(participant)"
                     [disabled]="processingId === participant.id"
                   >
-                    <i class="bi bi-x-lg me-1"></i>Rechazar
+                    <i class="bi bi-x-lg me-1"></i>No asistió
                   </button>
                 }
               </div>
@@ -299,21 +301,25 @@
       <div class="image-modal-body">
         <img [src]="selectedImageUrl" alt="Comprobante de pago" class="full-image">
       </div>
-      @if (selectedParticipant?.status === 'pending') {
+      @if (selectedParticipant?.status !== 'accepted' || selectedParticipant?.status !== 'rejected') {
         <div class="image-modal-footer">
-          <button
-            class="btn btn-aceptar-lg"
-            (click)="acceptParticipant(selectedParticipant!); closeImageViewer()"
-            [disabled]="processingId === selectedParticipant?.id"
-          >
-            <i class="bi bi-check-circle-fill me-2"></i>Aceptar y Enviar SMS
-          </button>
-          <button
-            class="btn btn-rechazar-sm"
-            (click)="rejectParticipant(selectedParticipant!); closeImageViewer()"
-          >
-            <i class="bi bi-x-circle me-1"></i>Rechazar
-          </button>
+          @if (selectedParticipant?.status !== 'accepted') {
+            <button
+              class="btn btn-aceptar-lg"
+              (click)="acceptParticipant(selectedParticipant!); closeImageViewer()"
+              [disabled]="processingId === selectedParticipant?.id"
+            >
+              <i class="bi bi-check-circle-fill me-2"></i>✓ Asistió
+            </button>
+          }
+          @if (selectedParticipant?.status !== 'rejected') {
+            <button
+              class="btn btn-rechazar-sm"
+              (click)="rejectParticipant(selectedParticipant!); closeImageViewer()"
+            >
+              <i class="bi bi-x-circle me-1"></i>No asistió
+            </button>
+          }
         </div>
       }
     </div>

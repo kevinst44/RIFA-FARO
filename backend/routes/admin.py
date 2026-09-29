@@ -1,4 +1,3 @@
-import random
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -8,7 +7,6 @@ from datetime import datetime
 from jose import jwt, JWTError
 from database import get_database
 from config import settings
-from services.sms import send_sms
 from services.email import send_confirmation_email
 
 
@@ -51,27 +49,6 @@ def serialize_participant(p: dict) -> dict:
     }
 
 
-async def get_available_ticket_number(db) -> int:
-    """Obtiene un número de boleta aleatorio único entre 1 y MAX_TICKETS."""
-    # Obtener todos los números ya usados
-    used_numbers = set()
-    async for p in db.participants.find(
-        {"status": "accepted", "ticket_number": {"$ne": None}},
-        {"ticket_number": 1}
-    ):
-        if p.get("ticket_number"):
-            used_numbers.add(p["ticket_number"])
-
-    if len(used_numbers) >= MAX_TICKETS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Se ha alcanzado el límite de {MAX_TICKETS} boletas. No hay más números disponibles."
-        )
-
-    # Números disponibles del 1 al MAX_TICKETS
-    available = list(set(range(1, MAX_TICKETS + 1)) - used_numbers)
-    return random.choice(available)
-
 
 @router.get("/participants")
 async def get_participants(admin: str = Depends(verify_admin)):
@@ -95,54 +72,14 @@ async def accept_participant(participant_id: str, admin: str = Depends(verify_ad
     if not participant:
         raise HTTPException(status_code=404, detail="Participante no encontrado")
 
-    if participant["status"] == "accepted":
-        raise HTTPException(status_code=400, detail="Este participante ya fue aceptado")
-
-    # Obtener número aleatorio único (lanza error si no hay disponibles)
-    ticket_number = await get_available_ticket_number(db)
-
     await db.participants.update_one(
         {"_id": obj_id},
-        {
-            "$set": {
-                "status": "accepted",
-                "ticket_number": ticket_number,
-                "accepted_at": datetime.utcnow()
-            }
-        }
+        {"$set": {"status": "accepted", "accepted_at": datetime.utcnow()}}
     )
-
-    # Calcular boletas restantes para informar
-    remaining = MAX_TICKETS - (await db.participants.count_documents({"status": "accepted"}))
-
-    # SMS de confirmación
-    sms_message = (
-        f"Gracias por participar en la\n"
-        f"Integracion de Amistad\n"
-        f"Dia del Movimiento Faro!!\n\n"
-        f"Dia: Sabado 3 de Octubre de 2026\n"
-        f"Hora: 7:30PM\n"
-        f"Lugar: Salon de eventos Parque del Amor\n\n"
-        f"Numero de boleta: #{ticket_number:03d}"
-    )
-
-    sms_sent = await send_sms(participant["celular"], sms_message)
-
-    # Enviar email de confirmación
-    email_sent = False
-    if participant.get("email"):
-        email_sent = await send_confirmation_email(
-            to_email=participant["email"],
-            nombre=participant["nombre"],
-            ticket_number=ticket_number
-        )
 
     return {
-        "message": "Participante aceptado exitosamente",
-        "ticket_number": ticket_number,
-        "sms_sent": sms_sent,
-        "email_sent": email_sent,
-        "remaining_tickets": remaining
+        "message": f"{participant['nombre']} marcado como asistió al evento",
+        "ticket_number": participant.get("ticket_number")
     }
 
 
