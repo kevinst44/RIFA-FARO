@@ -1,7 +1,30 @@
 import logging
+import os
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def _send_via_sendgrid(to_email: str, subject: str, html: str) -> bool:
+    api_key = os.environ.get("SENDGRID_API_KEY") or getattr(settings, "SENDGRID_API_KEY", None)
+    if not api_key:
+        return False
+    try:
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
+        sg = sendgrid.SendGridAPIClient(api_key=api_key)
+        message = Mail(
+            from_email=(settings.MAIL_FROM, settings.MAIL_FROM_NAME),
+            to_emails=to_email,
+            subject=subject,
+            html_content=html
+        )
+        response = sg.send(message)
+        logger.info(f"SendGrid enviado a {to_email} — status {response.status_code}")
+        return response.status_code in (200, 202)
+    except Exception as e:
+        logger.error(f"SendGrid error enviando a {to_email}: {e}")
+        return False
 
 
 def build_email_html(nombre: str, ticket_number: int) -> str:
@@ -176,15 +199,20 @@ async def send_verification_email(to_email: str, code: str) -> bool:
 
 
 async def send_confirmation_email(to_email: str, nombre: str, ticket_number: int) -> bool:
+    subject = f"Tu boleta #{ticket_number:03d} — Integración de Amistad Faro"
+    html = build_email_html(nombre, ticket_number)
+
+    # Intentar primero con SendGrid (funciona en Railway)
+    if await _send_via_sendgrid(to_email, subject, html):
+        return True
+
+    # Fallback: SMTP (solo funciona en local)
     if not settings.MAIL_USERNAME or not settings.MAIL_PASSWORD or not settings.MAIL_FROM:
-        logger.warning(
-            f"Email no configurado. Enviaría a {to_email}: boleta #{ticket_number:03d}"
-        )
+        logger.warning(f"Email no configurado. Boleta #{ticket_number:03d} para {to_email}")
         return False
 
     try:
         from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-
         conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,
             MAIL_PASSWORD=settings.MAIL_PASSWORD,
@@ -197,19 +225,16 @@ async def send_confirmation_email(to_email: str, nombre: str, ticket_number: int
             USE_CREDENTIALS=True,
             VALIDATE_CERTS=True
         )
-
         message = MessageSchema(
-            subject=f"🎟️ Tu boleta #{ticket_number:03d} — Integración de Amistad Faro",
+            subject=subject,
             recipients=[to_email],
-            body=build_email_html(nombre, ticket_number),
+            body=html,
             subtype=MessageType.html
         )
-
         fm = FastMail(conf)
         await fm.send_message(message)
-        logger.info(f"Email enviado a {to_email} — boleta #{ticket_number:03d}")
+        logger.info(f"Email SMTP enviado a {to_email} — boleta #{ticket_number:03d}")
         return True
-
     except Exception as e:
         logger.error(f"Error enviando email a {to_email}: {e}")
         return False
