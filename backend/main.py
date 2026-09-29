@@ -26,6 +26,7 @@ app.add_middleware(
         "http://localhost:4201",
         "http://127.0.0.1:4200",
         "https://rifa-faro-production.up.railway.app",
+        "https://rifa-frontend-production.up.railway.app",
     ],
     allow_origin_regex=r"https://.*\.up\.railway\.app",
     allow_credentials=True,
