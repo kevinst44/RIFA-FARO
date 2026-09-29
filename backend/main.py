@@ -27,7 +27,7 @@ app.add_middleware(
         "http://127.0.0.1:4200",
         "https://rifa-faro-production.up.railway.app",
         "https://rifa-frontend-production.up.railway.app",
-        "https://frontend-eight-rho-wergzupdar.vercel.app",
+        "https://rifa-faro-frontend.vercel.app",
     ],
     allow_origin_regex=r"https://.*\.up\.railway\.app",
     allow_credentials=True,
