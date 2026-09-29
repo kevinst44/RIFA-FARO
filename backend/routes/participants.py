@@ -1,11 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from fastapi.responses import HTMLResponse, Response
 from bson import ObjectId
 from datetime import datetime
+import base64
 import random
-import uuid
-import os
 from database import get_database
 from config import settings
 
@@ -119,19 +117,18 @@ async def create_participant(
         raise HTTPException(status_code=400, detail="No quedan boletas disponibles.")
     ticket_number = random.choice(available)
 
-    # Guardar imagen
-    ext = os.path.splitext(payment_image.filename)[1] if payment_image.filename else ".jpg"
-    filename = f"{uuid.uuid4()}{ext}"
-    filepath = os.path.join("uploads", filename)
+    # Guardar imagen en MongoDB como base64
     content = await payment_image.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
+    image_b64 = base64.b64encode(content).decode("utf-8")
+    image_mimetype = payment_image.content_type
 
     participant = {
         "nombre": nombre.strip(),
         "cedula": cedula.strip(),
         "celular": celular.strip(),
-        "payment_image_url": f"/uploads/{filename}",
+        "payment_image_b64": image_b64,
+        "payment_image_type": image_mimetype,
+        "payment_image_url": None,
         "status": "pending",
         "ticket_number": ticket_number,
         "created_at": datetime.utcnow()
@@ -145,6 +142,23 @@ async def create_participant(
         "message": "¡Participación registrada! Descarga tu boleta.",
         "remaining_tickets": MAX_TICKETS - assigned_count - 1
     }
+
+
+@router.get("/{participant_id}/image")
+async def get_payment_image(participant_id: str):
+    db = get_database()
+    try:
+        p = await db.participants.find_one({"_id": ObjectId(participant_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID inválido")
+    if not p:
+        raise HTTPException(status_code=404, detail="Participante no encontrado")
+    b64 = p.get("payment_image_b64")
+    if not b64:
+        raise HTTPException(status_code=404, detail="Imagen no disponible")
+    image_bytes = base64.b64decode(b64)
+    mimetype = p.get("payment_image_type", "image/jpeg")
+    return Response(content=image_bytes, media_type=mimetype)
 
 
 @router.get("/{participant_id}/ticket", response_class=HTMLResponse)

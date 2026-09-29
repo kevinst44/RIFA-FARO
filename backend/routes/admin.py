@@ -43,7 +43,7 @@ def serialize_participant(p: dict) -> dict:
         "cedula": p["cedula"],
         "celular": p["celular"],
         "email": p.get("email", ""),
-        "payment_image_url": p["payment_image_url"],
+        "payment_image_url": f"/api/participants/{str(p['_id'])}/image" if p.get("payment_image_b64") else p.get("payment_image_url"),
         "status": p["status"],
         "ticket_number": p.get("ticket_number"),
         "created_at": p["created_at"].isoformat() if p.get("created_at") else None,
