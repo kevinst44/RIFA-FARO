@@ -1,0 +1,256 @@
+<div class="raffle-page">
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6">
+
+        <!-- SUCCESS STATE -->
+        @if (submitSuccess) {
+        <div class="success-card fade-in text-center">
+          <div class="success-animation">🎉</div>
+          <h2>¡Registro Exitoso!</h2>
+          <p class="success-text">
+            Recibimos tu participación. Nuestro equipo verificará tu pago y recibirás el
+            número de tu boleta por correo electrónico y SMS.
+          </p>
+          <div class="success-icon-row">
+            <span>📧</span>
+            <span>→</span>
+            <span>🎟️</span>
+          </div>
+          <button class="btn btn-rifa mt-4" (click)="resetForm()">
+            Registrar otra participación
+          </button>
+        </div>
+        }
+
+        <!-- FORM STATE -->
+        @if (!submitSuccess) {
+        <div class="raffle-card fade-in">
+
+          <!-- Header -->
+          <div class="raffle-header">
+            <div class="ticket-icon">
+              <img src="assets/faro-logo.png" alt="Yo Soy Faro" class="header-faro-img">
+            </div>
+            <h1>{{ paymentInfo?.raffle_name || 'Gran Rifa' }}</h1>
+            <p>Completa el formulario para participar. Te notificaremos por correo.</p>
+          </div>
+
+          <!-- Contador de boletas disponibles -->
+          @if (availability) {
+          @if (availability.sold_out) {
+          <div class="tickets-banner sold-out">
+            <span class="tickets-icon">🚫</span>
+            <div class="tickets-info">
+              <strong>Boletas agotadas</strong>
+              <span>Las {{ availability.max_tickets }} boletas ya fueron asignadas</span>
+            </div>
+          </div>
+          } @else {
+          <div class="tickets-banner" [class.tickets-low]="availability.remaining <= 20">
+            <span class="tickets-icon"><img src="assets/faro-logo.png" alt="Faro" class="banner-faro-img"></span>
+            <div class="tickets-info">
+              <strong>{{ availability.remaining }} boletas disponibles</strong>
+              <div class="tickets-bar">
+                <div class="tickets-fill" [style.width.%]="availability.percentage_taken"></div>
+              </div>
+              <span>{{ availability.assigned }} de {{ availability.max_tickets }} asignadas</span>
+            </div>
+          </div>
+          }
+          }
+
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+            <!-- Nombre -->
+            <div class="field-group">
+              <label class="field-label">
+                <i class="bi bi-person-fill me-2"></i>Nombre Completo
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" [class.is-invalid]="nombreCtrl?.invalid && nombreCtrl?.touched"
+                formControlName="nombre" placeholder="Ej: Juan Pérez García" autocomplete="name">
+              @if (nombreCtrl?.invalid && nombreCtrl?.touched) {
+              <div class="field-error">
+                @if (nombreCtrl?.errors?.['required']) { El nombre es requerido }
+                @if (nombreCtrl?.errors?.['minlength']) { Mínimo 3 caracteres }
+              </div>
+              }
+            </div>
+
+            <!-- Cédula -->
+            <div class="field-group">
+              <label class="field-label">
+                <i class="bi bi-credit-card-fill me-2"></i>Número de Cédula
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" [class.is-invalid]="cedulaCtrl?.invalid && cedulaCtrl?.touched"
+                formControlName="cedula" placeholder="Ej: 1234567890" inputmode="numeric" maxlength="12">
+              @if (cedulaCtrl?.invalid && cedulaCtrl?.touched) {
+              <div class="field-error">
+                @if (cedulaCtrl?.errors?.['required']) { La cédula es requerida }
+                @if (cedulaCtrl?.errors?.['pattern']) { Solo números, entre 6 y 12 dígitos }
+              </div>
+              }
+            </div>
+
+            <!-- Celular -->
+            <div class="field-group">
+              <label class="field-label">
+                <i class="bi bi-phone-fill me-2"></i>Número de Celular
+                <span class="required">*</span>
+              </label>
+              <input type="tel" class="form-control" [class.is-invalid]="celularCtrl?.invalid && celularCtrl?.touched"
+                formControlName="celular" placeholder="Ej: 3001234567" inputmode="tel" maxlength="10">
+              <div class="field-hint">10 dígitos sin espacios ni guiones</div>
+              @if (celularCtrl?.invalid && celularCtrl?.touched) {
+              <div class="field-error">
+                @if (celularCtrl?.errors?.['required']) { El celular es requerido }
+                @if (celularCtrl?.errors?.['pattern']) { Ingresa 10 dígitos (Ej: 3001234567) }
+              </div>
+              }
+            </div>
+
+            <!-- Correo electrónico -->
+            <div class="field-group">
+              <label class="field-label">
+                <i class="bi bi-envelope-fill me-2"></i>Correo Electrónico
+                <span class="required">*</span>
+              </label>
+              <input type="email" class="form-control"
+                [class.is-invalid]="emailCtrl?.invalid && emailCtrl?.touched"
+                formControlName="email"
+                placeholder="Ej: juan&#64;correo.com"
+                autocomplete="email" inputmode="email">
+              <div class="field-hint">Aquí recibirás el número de tu boleta</div>
+              @if (emailCtrl?.invalid && emailCtrl?.touched) {
+                <div class="field-error">
+                  @if (emailCtrl?.errors?.['required']) { El correo es requerido }
+                  @if (emailCtrl?.errors?.['pattern']) { Ingresa un correo válido (Ej: nombre&#64;gmail.com) }
+                </div>
+              }
+            </div>
+
+            <!-- Pregunta de pago -->
+            <div class="field-group">
+              <label class="field-label">
+                <i class="bi bi-cash-coin me-2"></i>¿Ya sabe dónde pagar su boleta?
+              </label>
+              <div class="payment-choice-row">
+                <button type="button" class="choice-btn choice-yes" [class.active-yes]="knowsWhereToPay === true"
+                  (click)="setKnowsWhereToPay(true)">
+                  Sí, ya pagué
+                </button>
+                <button type="button" class="choice-btn choice-no" [class.active-no]="knowsWhereToPay === false"
+                  (click)="setKnowsWhereToPay(false)">
+                  No sé dónde pagar
+                </button>
+              </div>
+
+              <!-- BUBBLE de datos de pago -->
+              @if (knowsWhereToPay === false && paymentInfo) {
+              <div class="payment-bubble fade-in">
+                <div class="bubble-arrow"></div>
+                <div class="bubble-header">
+                  <i class="bi bi-bank2 me-2"></i>
+                  <strong>Datos para el Pago</strong>
+                </div>
+                <div class="bubble-grid">
+                  <div class="bubble-row">
+                    <span class="bl">Banco:</span>
+                    <span class="bv">{{ paymentInfo.bank }}</span>
+                  </div>
+                  <div class="bubble-row">
+                    <span class="bl">Titular:</span>
+                    <span class="bv">{{ paymentInfo.owner }}</span>
+                  </div>
+                  <div class="bubble-row">
+                    <span class="bl">Tipo:</span>
+                    <span class="bv">{{ paymentInfo.account_type }}</span>
+                  </div>
+                  <div class="bubble-row account-row">
+                    <span class="bl">N° Cuenta:</span>
+                    <span class="bv account-num">{{ paymentInfo.account_number }}</span>
+                  </div>
+                </div>
+                <div class="bubble-footer">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Luego de pagar, adjunta el comprobante abajo 👇
+                </div>
+              </div>
+              }
+            </div>
+
+            <!-- Upload de comprobante (visible solo cuando eligió) -->
+            @if (knowsWhereToPay !== null) {
+            <div class="field-group fade-in">
+              <label class="field-label">
+                <i class="bi bi-image me-2"></i>Adjuntar Comprobante de Pago
+                <span class="required">*</span>
+              </label>
+
+              @if (!selectedFilePreview) {
+              <div class="upload-zone" [class.drag-over]="isDragOver" (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave()" (drop)="onDrop($event)" (click)="fileInput.click()">
+                <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                <p class="upload-text">
+                  <strong>Haz clic</strong> o arrastra aquí tu comprobante
+                </p>
+                <p class="upload-hint">JPG, PNG, WEBP — máx. 10MB</p>
+              </div>
+              } @else {
+              <div class="image-preview-container">
+                <img [src]="selectedFilePreview" alt="Comprobante de pago" class="preview-img">
+                <div class="preview-overlay">
+                  <button type="button" class="btn btn-sm btn-light" (click)="fileInput.click()">
+                    <i class="bi bi-pencil me-1"></i>Cambiar
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="removeFile()">
+                    <i class="bi bi-trash me-1"></i>Eliminar
+                  </button>
+                </div>
+                <div class="preview-filename">{{ selectedFile?.name }}</div>
+              </div>
+              }
+
+              <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" style="display:none">
+            </div>
+            }
+
+            <!-- Error message -->
+            @if (submitError) {
+            <div class="alert alert-danger d-flex align-items-center gap-2 fade-in">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+              <span>{{ submitError }}</span>
+            </div>
+            }
+
+            <!-- Submit button -->
+            <button type="submit" class="btn btn-rifa" [disabled]="isSubmitting || knowsWhereToPay === null">
+              @if (isSubmitting) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Enviando participación...
+              } @else {
+              <i class="bi bi-send-fill me-2"></i>
+              Enviar Participación
+              }
+            </button>
+
+            @if (knowsWhereToPay === null) {
+            <p class="submit-hint">Selecciona si ya pagaste para continuar</p>
+            }
+
+            <div class="info-contact">
+              <i class="bi bi-info-circle-fill me-2"></i>
+              En caso de no recibir tu boleta al correo electrónico, escríbenos al
+              <strong>3234240621</strong>
+            </div>
+
+          </form>
+        </div>
+        }
+
+      </div>
+    </div>
+  </div>
+</div>

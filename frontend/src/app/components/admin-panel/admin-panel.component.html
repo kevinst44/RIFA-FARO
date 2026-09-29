@@ -1,0 +1,321 @@
+<div class="admin-page">
+
+  <!-- Header -->
+  <div class="admin-header">
+    <div class="header-left">
+      <div class="header-faro">
+        <img src="assets/faro-logo.png" alt="Yo Soy Faro" style="width:100%;height:100%;object-fit:contain">
+      </div>
+      <div>
+        <h1>Panel de Administración</h1>
+        <p>Gestiona las participaciones de la rifa</p>
+      </div>
+    </div>
+    <div class="header-search">
+      <i class="bi bi-search search-icon"></i>
+      <input
+        type="text"
+        class="search-input"
+        [(ngModel)]="searchCedula"
+        placeholder="Buscar por cédula..."
+        inputmode="numeric"
+        maxlength="12"
+      >
+      @if (searchCedula) {
+        <button class="search-clear" (click)="searchCedula = ''">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      }
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-refresh" (click)="loadData()" title="Actualizar">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+      <button class="btn btn-logout" (click)="logout()">
+        <i class="bi bi-box-arrow-right me-2"></i>Salir
+      </button>
+    </div>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-card total">
+        <div class="stat-icon">📋</div>
+        <div class="stat-info">
+          <span class="stat-num">{{ stats.total }}</span>
+          <span class="stat-label">Registrados</span>
+        </div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-info">
+          <span class="stat-num">{{ stats.pending }}</span>
+          <span class="stat-label">Pendientes</span>
+        </div>
+      </div>
+      <div class="stat-card accepted">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <span class="stat-num">{{ stats.accepted }}</span>
+          <span class="stat-label">Aceptados</span>
+        </div>
+      </div>
+      <div class="stat-card rejected">
+        <div class="stat-icon">❌</div>
+        <div class="stat-info">
+          <span class="stat-num">{{ stats.rejected }}</span>
+          <span class="stat-label">Rechazados</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de boletas -->
+    @if (stats.max_tickets) {
+      <div class="tickets-progress-bar">
+        <div class="bar-header">
+          <span>🎟️ Boletas asignadas: <strong>{{ stats.accepted }}</strong> / {{ stats.max_tickets }}</span>
+          <span [class.text-warning]="stats.remaining_tickets <= 20" [class.text-danger]="stats.remaining_tickets === 0">
+            @if (stats.remaining_tickets === 0) { 🚫 Agotadas }
+            @else { {{ stats.remaining_tickets }} disponibles }
+          </span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" [style.width.%]="(stats.accepted / stats.max_tickets) * 100"></div>
+        </div>
+      </div>
+    }
+
+    <!-- Notifications -->
+    @if (actionSuccess) {
+      <div class="alert alert-success d-flex align-items-center gap-2 fade-in">
+        <i class="bi bi-check-circle-fill"></i>
+        {{ actionSuccess }}
+      </div>
+    }
+    @if (error) {
+      <div class="alert alert-danger d-flex align-items-center gap-2 fade-in">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        {{ error }}
+      </div>
+    }
+
+    <!-- Filter tabs -->
+    <div class="filter-tabs">
+      <button class="tab-btn" [class.active]="filter === 'all'" (click)="filter = 'all'">
+        Todos ({{ stats.total }})
+      </button>
+      <button class="tab-btn" [class.active]="filter === 'pending'" (click)="filter = 'pending'">
+        Pendientes ({{ stats.pending }})
+      </button>
+      <button class="tab-btn" [class.active]="filter === 'accepted'" (click)="filter = 'accepted'">
+        Aceptados ({{ stats.accepted }})
+      </button>
+      <button class="tab-btn" [class.active]="filter === 'rejected'" (click)="filter = 'rejected'">
+        Rechazados ({{ stats.rejected }})
+      </button>
+    </div>
+
+    <!-- Loading -->
+    @if (isLoading) {
+      <div class="loading-area">
+        <div class="spinner-border text-light" style="width: 3rem; height: 3rem;"></div>
+        <p>Cargando participantes...</p>
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!isLoading && filteredParticipants.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>Sin participantes</h3>
+        <p>No hay participantes en esta categoría todavía.</p>
+      </div>
+    }
+
+    <!-- Participants grid -->
+    @if (!isLoading && filteredParticipants.length > 0) {
+      <div class="participants-grid">
+        @for (participant of filteredParticipants; track participant.id) {
+          <div class="participant-card" [class]="'status-' + participant.status">
+
+            <!-- Status badge -->
+            <div class="status-badge" [class]="'badge-' + participant.status">
+              @if (participant.status === 'pending') { ⏳ Pendiente }
+              @if (participant.status === 'accepted') { ✅ Aceptado }
+              @if (participant.status === 'rejected') { ❌ Rechazado }
+            </div>
+
+            <!-- Payment image preview -->
+            <div class="card-image-wrap" (click)="viewImage(participant)">
+              <img
+                [src]="getImageUrl(participant.payment_image_url)"
+                [alt]="'Comprobante de ' + participant.nombre"
+                class="card-image"
+                loading="lazy"
+              >
+              <div class="image-overlay">
+                <i class="bi bi-zoom-in"></i>
+              </div>
+            </div>
+
+            <!-- Card body -->
+            <div class="card-body-area">
+              <div class="participant-name">{{ participant.nombre }}</div>
+
+              <div class="participant-details">
+                <div class="detail-row">
+                  <i class="bi bi-credit-card"></i>
+                  <span>{{ participant.cedula }}</span>
+                </div>
+                <div class="detail-row">
+                  <i class="bi bi-phone"></i>
+                  <span>{{ participant.celular }}</span>
+                </div>
+                <div class="detail-row">
+                  <i class="bi bi-clock"></i>
+                  <span>{{ formatDate(participant.created_at) }}</span>
+                </div>
+                @if (participant.email) {
+                  <div class="detail-row">
+                    <i class="bi bi-envelope"></i>
+                    <span class="email-text">{{ participant.email }}</span>
+                  </div>
+                }
+                @if (participant.ticket_number) {
+                  <div class="ticket-badge">
+                    🎟️ Boleta #{{ participant.ticket_number.toString().padStart(4, '0') }}
+                  </div>
+                }
+              </div>
+
+              <!-- Actions -->
+              <div class="card-actions">
+                <button class="btn btn-ver" (click)="viewImage(participant)">
+                  <i class="bi bi-eye me-1"></i>Ver Imagen
+                </button>
+                <button class="btn btn-editar" (click)="openEdit(participant)" title="Editar datos">
+                  <i class="bi bi-pencil-fill"></i>
+                </button>
+                @if (participant.status === 'accepted' && participant.email) {
+                  <button class="btn btn-reenviar" (click)="resendEmail(participant)"
+                    [disabled]="resendingId === participant.id" title="Reenviar correo">
+                    @if (resendingId === participant.id) {
+                      <span class="spinner-border spinner-border-sm"></span>
+                    } @else {
+                      <i class="bi bi-envelope-arrow-up-fill"></i>
+                    }
+                  </button>
+                }
+                @if (participant.status === 'pending') {
+                  <button
+                    class="btn btn-aceptar"
+                    (click)="acceptParticipant(participant)"
+                    [disabled]="processingId === participant.id"
+                  >
+                    @if (processingId === participant.id) {
+                      <span class="spinner-border spinner-border-sm me-1"></span>
+                    } @else {
+                      <i class="bi bi-check-lg me-1"></i>
+                    }
+                    Aceptar
+                  </button>
+                  <button
+                    class="btn btn-rechazar"
+                    (click)="rejectParticipant(participant)"
+                    [disabled]="processingId === participant.id"
+                  >
+                    <i class="bi bi-x-lg me-1"></i>Rechazar
+                  </button>
+                }
+              </div>
+            </div>
+
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>
+
+<!-- Modal de Edición -->
+@if (editingParticipant) {
+  <div class="edit-modal-backdrop" (click)="closeEdit()">
+    <div class="edit-modal-box" (click)="$event.stopPropagation()">
+      <div class="edit-modal-header">
+        <strong>✏️ Editar datos de {{ editingParticipant.nombre }}</strong>
+        <button class="btn-close-modal" (click)="closeEdit()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="edit-modal-body">
+        <div class="edit-field">
+          <label>Nombre Completo</label>
+          <input type="text" class="form-control" [(ngModel)]="editData.nombre" placeholder="Nombre completo">
+        </div>
+        <div class="edit-field">
+          <label>Cédula</label>
+          <input type="text" class="form-control" [(ngModel)]="editData.cedula" placeholder="Número de cédula">
+        </div>
+        <div class="edit-field">
+          <label>Celular</label>
+          <input type="tel" class="form-control" [(ngModel)]="editData.celular" placeholder="10 dígitos">
+        </div>
+        <div class="edit-field">
+          <label>Correo Electrónico</label>
+          <input type="email" class="form-control" [(ngModel)]="editData.email" placeholder="correo&#64;ejemplo.com">
+        </div>
+        @if (editingParticipant.ticket_number) {
+          <div class="edit-ticket-info">
+            <i class="bi bi-info-circle me-2"></i>
+            La boleta <strong>#{{ editingParticipant.ticket_number.toString().padStart(3,'0') }}</strong> no cambia — solo se editan los datos personales.
+          </div>
+        }
+      </div>
+      <div class="edit-modal-footer">
+        <button class="btn btn-cancelar" (click)="closeEdit()">Cancelar</button>
+        <button class="btn btn-guardar" (click)="saveEdit()" [disabled]="isSavingEdit">
+          @if (isSavingEdit) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Image Viewer Modal -->
+@if (selectedImageUrl) {
+  <div class="image-modal-backdrop" (click)="closeImageViewer()">
+    <div class="image-modal-box" (click)="$event.stopPropagation()">
+      <div class="image-modal-header">
+        <div>
+          <strong>{{ selectedParticipant?.nombre }}</strong>
+          <span class="ms-2 text-muted">— Comprobante de pago</span>
+        </div>
+        <button class="btn-close-modal" (click)="closeImageViewer()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="image-modal-body">
+        <img [src]="selectedImageUrl" alt="Comprobante de pago" class="full-image">
+      </div>
+      @if (selectedParticipant?.status === 'pending') {
+        <div class="image-modal-footer">
+          <button
+            class="btn btn-aceptar-lg"
+            (click)="acceptParticipant(selectedParticipant!); closeImageViewer()"
+            [disabled]="processingId === selectedParticipant?.id"
+          >
+            <i class="bi bi-check-circle-fill me-2"></i>Aceptar y Enviar SMS
+          </button>
+          <button
+            class="btn btn-rechazar-sm"
+            (click)="rejectParticipant(selectedParticipant!); closeImageViewer()"
+          >
+            <i class="bi bi-x-circle me-1"></i>Rechazar
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

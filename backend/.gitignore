@@ -1,0 +1,23 @@
+# Variables de entorno (contienen credenciales - NUNCA subir)
+.env
+.env.*
+!.env.example
+
+# Entorno virtual Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Imágenes subidas por usuarios
+uploads/
+
+# Logs
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

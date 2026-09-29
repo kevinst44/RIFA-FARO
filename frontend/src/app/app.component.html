@@ -1,0 +1,19 @@
+<div class="app-wrapper">
+
+  <!-- Faro Button - top left, siempre visible en la página pública -->
+  @if (!isAdminRoute) {
+    <button class="faro-btn" (click)="onFaroClick()" title="Administración">
+      <img src="assets/faro-logo.png" class="faro-img" alt="Yo Soy Faro">
+    </button>
+  }
+
+  <router-outlet></router-outlet>
+
+  @if (showLoginModal) {
+    <app-login-modal
+      (loginSuccess)="onLoginSuccess()"
+      (close)="onModalClose()">
+    </app-login-modal>
+  }
+
+</div>

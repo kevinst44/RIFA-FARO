@@ -1,0 +1,71 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal-box fade-in">
+    <button class="close-btn" (click)="onClose()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+
+    <div class="modal-header-area">
+      <div class="faro-large">
+        <img src="assets/faro-logo.png" alt="Yo Soy Faro" style="width:100%;height:100%;object-fit:contain;border-radius:50%">
+      </div>
+      <h3>Acceso Administrativo</h3>
+      <p>Ingresa tus credenciales para gestionar la rifa</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="form-group mb-3">
+        <label class="form-label">
+          <i class="bi bi-person me-2"></i>Usuario
+        </label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="username"
+          placeholder="Usuario administrador"
+          autocomplete="username"
+        >
+        @if (form.get('username')?.invalid && form.get('username')?.touched) {
+          <div class="invalid-feedback d-block">Campo requerido</div>
+        }
+      </div>
+
+      <div class="form-group mb-4">
+        <label class="form-label">
+          <i class="bi bi-lock me-2"></i>Contraseña
+        </label>
+        <div class="password-wrapper">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            class="form-control"
+            formControlName="password"
+            placeholder="Contraseña"
+            autocomplete="current-password"
+          >
+          <button type="button" class="toggle-password" (click)="showPassword = !showPassword">
+            <i class="bi" [class.bi-eye]="!showPassword" [class.bi-eye-slash]="showPassword"></i>
+          </button>
+        </div>
+        @if (form.get('password')?.invalid && form.get('password')?.touched) {
+          <div class="invalid-feedback d-block">Campo requerido</div>
+        }
+      </div>
+
+      @if (errorMessage) {
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          {{ errorMessage }}
+        </div>
+      }
+
+      <button type="submit" class="btn btn-login w-100" [disabled]="isLoading">
+        @if (isLoading) {
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Verificando...
+        } @else {
+          <i class="bi bi-box-arrow-in-right me-2"></i>
+          Ingresar
+        }
+      </button>
+    </form>
+  </div>
+</div>
