@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -8,6 +9,8 @@ from jose import jwt, JWTError
 from database import get_database
 from config import settings
 from services.email import send_confirmation_email
+
+logger = logging.getLogger(__name__)
 
 
 class ParticipantUpdate(BaseModel):
@@ -35,17 +38,19 @@ async def verify_admin(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 
 def serialize_participant(p: dict) -> dict:
+    created_at = p.get("created_at")
+    accepted_at = p.get("accepted_at")
     return {
-        "id": str(p["_id"]),
-        "nombre": p["nombre"],
-        "cedula": p["cedula"],
-        "celular": p["celular"],
+        "id": str(p.get("_id", "")),
+        "nombre": p.get("nombre", ""),
+        "cedula": p.get("cedula", ""),
+        "celular": p.get("celular", ""),
         "email": p.get("email", ""),
         "payment_image_url": f"/api/participants/{str(p['_id'])}/image" if p.get("payment_image_b64") else p.get("payment_image_url"),
-        "status": p["status"],
+        "status": p.get("status", "pending"),
         "ticket_number": p.get("ticket_number"),
-        "created_at": p["created_at"].isoformat() if p.get("created_at") else None,
-        "accepted_at": p["accepted_at"].isoformat() if p.get("accepted_at") else None,
+        "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at) if created_at else None,
+        "accepted_at": accepted_at.isoformat() if hasattr(accepted_at, "isoformat") else str(accepted_at) if accepted_at else None,
     }
 
 
@@ -55,7 +60,10 @@ async def get_participants(admin: str = Depends(verify_admin)):
     db = get_database()
     participants = []
     async for p in db.participants.find().sort("created_at", -1):
-        participants.append(serialize_participant(p))
+        try:
+            participants.append(serialize_participant(p))
+        except Exception as e:
+            logger.error(f"Error serializing participant {p.get('_id')}: {e}")
     return participants
 
 
