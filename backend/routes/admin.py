@@ -40,13 +40,16 @@ async def verify_admin(credentials: HTTPAuthorizationCredentials = Depends(secur
 def serialize_participant(p: dict) -> dict:
     created_at = p.get("created_at")
     accepted_at = p.get("accepted_at")
+    pid = str(p.get("_id", ""))
+    # has_image_b64 is injected by the aggregation pipeline
+    has_image = p.get("has_image_b64", False)
     return {
-        "id": str(p.get("_id", "")),
+        "id": pid,
         "nombre": p.get("nombre", ""),
         "cedula": p.get("cedula", ""),
         "celular": p.get("celular", ""),
         "email": p.get("email", ""),
-        "payment_image_url": f"/api/participants/{str(p['_id'])}/image" if p.get("payment_image_b64") else p.get("payment_image_url"),
+        "payment_image_url": f"/api/participants/{pid}/image" if has_image else p.get("payment_image_url"),
         "status": p.get("status", "pending"),
         "ticket_number": p.get("ticket_number"),
         "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at) if created_at else None,
@@ -59,7 +62,13 @@ def serialize_participant(p: dict) -> dict:
 async def get_participants(admin: str = Depends(verify_admin)):
     db = get_database()
     participants = []
-    async for p in db.participants.find().sort("created_at", -1):
+    # Exclude payment_image_b64 (large base64) — inject has_image_b64 flag instead
+    pipeline = [
+        {"$sort": {"created_at": -1}},
+        {"$addFields": {"has_image_b64": {"$cond": [{"$gt": ["$payment_image_b64", None]}, True, False]}}},
+        {"$project": {"payment_image_b64": 0}},
+    ]
+    async for p in db.participants.aggregate(pipeline):
         try:
             participants.append(serialize_participant(p))
         except Exception as e:
