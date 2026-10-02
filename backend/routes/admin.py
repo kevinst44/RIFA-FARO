@@ -41,15 +41,13 @@ def serialize_participant(p: dict) -> dict:
     created_at = p.get("created_at")
     accepted_at = p.get("accepted_at")
     pid = str(p.get("_id", ""))
-    # has_image_b64 is injected by the aggregation pipeline
-    has_image = p.get("has_image_b64", False)
     return {
         "id": pid,
         "nombre": p.get("nombre", ""),
         "cedula": p.get("cedula", ""),
         "celular": p.get("celular", ""),
         "email": p.get("email", ""),
-        "payment_image_url": f"/api/participants/{pid}/image" if has_image else p.get("payment_image_url"),
+        "payment_image_url": f"/api/participants/{pid}/image",
         "status": p.get("status", "pending"),
         "ticket_number": p.get("ticket_number"),
         "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at) if created_at else None,
@@ -62,13 +60,9 @@ def serialize_participant(p: dict) -> dict:
 async def get_participants(admin: str = Depends(verify_admin)):
     db = get_database()
     participants = []
-    # Exclude payment_image_b64 (large base64) — inject has_image_b64 flag instead
-    pipeline = [
-        {"$sort": {"created_at": -1}},
-        {"$addFields": {"has_image_b64": {"$cond": [{"$gt": ["$payment_image_b64", None]}, True, False]}}},
-        {"$project": {"payment_image_b64": 0}},
-    ]
-    async for p in db.participants.aggregate(pipeline):
+    # Excluir payment_image_b64 (imagen base64 pesada) para no saturar RAM
+    projection = {"payment_image_b64": 0, "payment_image_type": 0}
+    async for p in db.participants.find({}, projection).sort("created_at", -1):
         try:
             participants.append(serialize_participant(p))
         except Exception as e:
